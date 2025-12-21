@@ -1,0 +1,83 @@
+# == Dynamic Shadows Module v0.0.1 == #
+#
+#	by dionednd
+#
+
+# == Changelog == #
+#
+#	v 0.0.1
+#	- implementation
+#
+
+# == Normal States == #
+
+[StateDef 6796790; type: S; ctrl: 0; velset: 0, 0;anim: -1;]
+AssertSpecial{flag:invisible;}
+AssertSpecial{flag:noshadow;}
+NotHitBy{value:SCA}
+
+# == Global States == #
+
+[StateDef -4]
+ignorehitpause if playerno = 1 && NumHelper(6796790) < 1
+{
+	Helper
+	{
+		name: "Pseudo-Light Object";
+		id: 6796790;
+		pos: StageConst(LightPosX), StageConst(LightPosY), StageConst(LightPosZ);
+		postype: none;
+		facing: 1;
+		preserve: 1;
+		immortal: 1;
+		stateno: 6796790;
+		keyctrl: 0;
+		supermovetime: -1;
+		pausemovetime: -1;
+	}
+}
+
+ignorehitpause if playerno < 9 && !isHelper && player(1), NumHelper(6796790)
+{
+	let lx = player(1),helper(6796790), pos x;
+	let ly = player(1),helper(6796790), pos y;
+	let lz = player(1),helper(6796790), pos z;
+
+	let px = pos x;
+	let py = pos y;
+	let pz = pos z;
+
+	let dx = $px - $lx;
+	let dy = $py - $ly;
+	let dz = $pz - $lz;
+	let d = $dx + $dy + $dz;
+
+	let shearDiv  = 360.0;
+	let heightDiv = 360.0;
+
+	let xs = ($dx / $shearDiv) / (1 + $dz);
+	let ys = 0.001 + (($dy / $heightDiv) / (1 + $dz));
+
+	let ys = max(0.001, min($ys, 1.0));
+
+	let baseIntensity = StageVar(shadow.intensity);
+	let falloff = StageVar(shadow.intensity) *0.00125;
+
+	let i = $baseIntensity - (abs($d) * $falloff);
+
+	let i = max(0, min($i, 255));
+
+	ModifyShadow
+	{
+		offset: 0, ($ys*-1);
+		xshear: $xs * -1;
+		yscale: $ys;
+		intensity: $i;
+		projection: perspective2;
+		focallength: 1331 * ($ys^.5);
+	}
+	ModifyStageVar
+	{
+		shadow.fade.range: abs(StageConst(LightPosY))*-1, 0;
+	}
+}
