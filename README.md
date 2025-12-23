@@ -1,4 +1,4 @@
-# Dynamic Shadows Module v0.0.1
+# Dynamic Shadows Module v0.0.2
 
 A **pseudo-3D dynamic shadow module** for Ikemen GO using ZSS.
 This module simulates real-time shadow projection based on a per-stage configurable **light source position**.
