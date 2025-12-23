@@ -1,4 +1,4 @@
-# == Dynamic Shadows Module v0.0.1 == #
+# == Dynamic Shadows Module v0.0.2 == #
 #
 #	by dionednd
 #
@@ -7,7 +7,8 @@
 #
 #	v 0.0.1
 #	- implementation
-#
+#	v0.0.2
+#	- added window parameter to prevent shadow from leaking over.
 
 # == Normal States == #
 
@@ -25,7 +26,7 @@ ignorehitpause if playerno = 1 && NumHelper(6796790) < 1
 	{
 		name: "Pseudo-Light Object";
 		id: 6796790;
-		pos: StageConst(LightPosX), StageConst(LightPosY), StageConst(LightPosZ);
+		pos: StageConst(LightPosX), StageConst(LightPosY) - 75, StageConst(LightPosZ);
 		postype: none;
 		facing: 1;
 		preserve: 1;
@@ -74,10 +75,12 @@ ignorehitpause if playerno < 9 && !isHelper && player(1), NumHelper(6796790)
 		yscale: $ys;
 		intensity: $i;
 		projection: perspective2;
-		focallength: 1331 * ($ys^.5);
+		focallength: 1331 * $ys;
+		window: -9999, cond($ys<0,-9999,0),9999,cond($ys<0,0,-9999); #prevents shadow from overlapping character sprites
 	}
 	ModifyStageVar
 	{
-		shadow.fade.range: abs(StageConst(LightPosY))*-1, 0;
+		shadow.fade.range: abs(StageConst(LightPosY) - 75)*-1, 0;
 	}
+
 }
