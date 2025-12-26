@@ -1,4 +1,4 @@
-# == Dynamic Shadows Module v0.0.2 == #
+# == Dynamic Shadows Module v0.0.3 == #
 #
 #	by dionednd
 #
@@ -9,24 +9,34 @@
 #	- implementation
 #	v0.0.2
 #	- added window parameter to prevent shadow from leaking over.
+#	v0.0.3
+#	- rewrote half of the code to make the shadows as accurate as possible to real time lighting regardless if in a stage with z axis or not.
+#	- added new stage constants
+#	- commented code that modified shadow.fade.range and removed intensity code.
+#	- added debug mode in training mode. press start on P2 to access move mode 1 / 2. use Debug(Shift+D) to see the light object.
 
 # == Normal States == #
 
-[StateDef 6796790; type: S; ctrl: 0; velset: 0, 0;anim: -1;]
-AssertSpecial{flag:invisible;}
-AssertSpecial{flag:noshadow;}
-NotHitBy{value:SCA}
+[StateDef 6796790; type: S; ctrl: 0; velset: 0, 0; anim: -1;]
+AssertSpecial{flag: invisible;}
+AssertSpecial{flag: noshadow;}
+NotHitBy{value: SCA}
 
 # == Global States == #
 
 [StateDef -4]
+
+player(2), map(dynamicShadows_debugMode) := 1; # Change to 0 to disable debug mode in training mode.
+
+
+
 ignorehitpause if playerno = 1 && NumHelper(6796790) < 1
 {
 	Helper
 	{
 		name: "Pseudo-Light Object";
 		id: 6796790;
-		pos: StageConst(LightPosX), StageConst(LightPosY) - 75, StageConst(LightPosZ);
+		pos: StageConst(LightPosX), StageConst(LightPosY), StageConst(LightPosZ);
 		postype: none;
 		facing: 1;
 		preserve: 1;
@@ -40,9 +50,9 @@ ignorehitpause if playerno = 1 && NumHelper(6796790) < 1
 
 ignorehitpause if playerno < 9 && !isHelper && player(1), NumHelper(6796790)
 {
-	let lx = player(1),helper(6796790), pos x;
-	let ly = player(1),helper(6796790), pos y;
-	let lz = player(1),helper(6796790), pos z;
+	let lx = player(1), helper(6796790), pos x;
+	let ly = player(1), helper(6796790), pos y;
+	let lz = player(1), helper(6796790), pos z + cond(StageConst(LightDisableZOffset) = 1, 0, cond(StageConst(LightZOffset) != 0, StageConst(LightZOffset), -30));
 
 	let px = pos x;
 	let py = pos y;
@@ -51,36 +61,73 @@ ignorehitpause if playerno < 9 && !isHelper && player(1), NumHelper(6796790)
 	let dx = $px - $lx;
 	let dy = $py - $ly;
 	let dz = $pz - $lz;
-	let d = $dx + $dy + $dz;
 
-	let shearDiv  = 360.0;
-	let heightDiv = 360.0;
+	let h = max(1, abs($dy));
 
-	let xs = ($dx / $shearDiv) / (1 + $dz);
-	let ys = 0.001 + (($dy / $heightDiv) / (1 + $dz));
+	let xs = -($dx / $h);
+	let ys = ($dz / $h);
 
-	let ys = max(0.001, min($ys, 1.0));
+	let ys_clamped = max(-2.0, min($ys, 2.0));
 
-	let baseIntensity = StageVar(shadow.intensity);
-	let falloff = StageVar(shadow.intensity) *0.00125;
-
-	let i = $baseIntensity - (abs($d) * $falloff);
-
-	let i = max(0, min($i, 255));
+	#let d = ($dx*$dx + $dy*$dy + $dz*$dz)^0.5;
+	#let baseI = StageVar(shadow.intensity);
+	#let i = max(0, min(256, $baseI - ($d * 0.0000125)));
 
 	ModifyShadow
 	{
-		offset: 0, ($ys*-1);
-		xshear: $xs * -1;
-		yscale: $ys;
-		intensity: $i;
+		offset: 0, 0;
+		xshear: $xs;
+		yscale: $ys_clamped;
 		projection: perspective2;
-		focallength: 1331 * $ys;
-		window: -9999, cond($ys<0,-9999,0),9999,cond($ys<0,0,-9999); #prevents shadow from overlapping character sprites
+		focallength: 1331 * abs($ys_clamped);
+		window: -9999, cond($ys_clamped<0,-9999,0),9999,cond($ys_clamped<0,0,-9999);
 	}
-	ModifyStageVar
+	
+	#ModifyStageVar
+	#{
+	#	shadow.fade.range: $ly, 0;
+	#}
+}
+
+[StateDef +1]
+
+if playerno = 2 && roundstate = 2 && gamemode = "training"
+{
+	if InputTime(s) > 0 && !map(___s)
 	{
-		shadow.fade.range: abs(StageConst(LightPosY) - 75)*-1, 0;
+		map(___s) := 1;
+		map(movemode) := (map(movemode) + 1) % 3;
+	}
+	else if InputTime(s) <= 0
+	{
+		map(___s) := 0;
 	}
 
+	if map(movemode)
+	{
+		ctrlset{value:0}
+		if InputTime(L) > 0 && InputTime(R) <= 0
+		{
+			PosAdd{x: -1 * player(1), helper(6796790), facing;redirectId:player(1), helper(6796790), id}
+		}
+
+		if InputTime(R) > 0 && InputTime(L) <= 0
+		{
+			PosAdd{x: 1 * player(1), helper(6796790), facing;redirectId:player(1), helper(6796790), id}
+		}
+
+		if InputTime(U) > 0 && InputTime(D) <= 0
+		{
+			PosAdd{y: cond(map(movemode) = 1, -1, 0); z: cond(map(movemode) = 2, -1, 0);redirectId:player(1), helper(6796790), id}
+		}
+
+		if InputTime(D) > 0 && InputTime(U) <= 0
+		{
+			PosAdd{y: cond(map(movemode) = 1, 1, 0); z: cond(map(movemode) = 2, 1, 0);redirectId:player(1), helper(6796790), id}
+		}
+	}
+	else if !ctrl & stateno = 0
+	{
+		ctrlset{value:1}
+	}
 }
