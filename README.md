@@ -1,4 +1,4 @@
-# Dynamic Shadows Module v0.0.3
+# Dynamic Shadows Module v0.0.4
 
 A **pseudo-3D dynamic shadow module** for Ikemen GO using ZSS.
 This module simulates real-time shadow projection based on a per-stage configurable **light source position**.
@@ -13,6 +13,7 @@ This module creates a **pseudo light object** using a helper and modifies player
 
 ```ini
 [Constants]
+LightOverride = 0
 LightPosX = 0
 LightPosY = 0
 LightPosZ = 0
@@ -23,6 +24,7 @@ LightZOffset = 0
 ### Definitions
 
 ```ini
+LightOverride - if set to 0, the module will calculate the light's position based on the stage's xshear and yscale parameters. if set to 1, the module will accept the constants below as the light position.
 LightPosX - X Position of the Light Object. Negative values go left, Positive values go right. 0 by default if left undefined.
 LightPosY - Y Position of the Light Object. Negative values go up, Positive values go down. 0 by default if left undefined.
 LightPosZ - Z Position of the Light Object. Negative values go up, Positive values go down. 0 if left undefined whenever LightDisableZOffset is on, -30 if left undefined whenever LightDisableZOffset is off. This is ignored on stages without Z Axis.
@@ -32,7 +34,7 @@ LightZOffset - Z Offset of the Light Object. Treat this like LightPosZ for stage
 
 ### Debug Mode
 
-There's a debug mode feature that's enabled by default. To access debug mode, play on training mode and press start on P2.
+There's a debug mode feature. To access debug mode, open `dynamic_shadows.zss` and look for `player(2), map(dynamicShadows_debugMode)`. change the value to 1 and play on training mode then press start on P2.
 I suggest going on actual Debug Mode by pressing CTRL+D on your keyboard to see the Light Object move. (AllowDebugMode must be 1 in your config.ini)
 
 ### Movement Modes
