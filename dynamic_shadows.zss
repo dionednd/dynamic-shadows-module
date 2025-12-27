@@ -1,4 +1,4 @@
-# == Dynamic Shadows Module v0.0.3 == #
+# == Dynamic Shadows Module v0.0.4 == #
 #
 #	by dionednd
 #
@@ -14,6 +14,9 @@
 #	- added new stage constants
 #	- commented code that modified shadow.fade.range and removed intensity code.
 #	- added debug mode in training mode. press start on P2 to access move mode 1 / 2. use Debug(Shift+D) to see the light object.
+#	v0.0.4
+#	- added compatibility for stages. to modify the light position, StageConst(LightOverride) will have to be set to 1.
+#	- disabled debug mode by default.
 
 # == Normal States == #
 
@@ -26,9 +29,7 @@ NotHitBy{value: SCA}
 
 [StateDef -4]
 
-player(2), map(dynamicShadows_debugMode) := 1; # Change to 0 to disable debug mode in training mode.
-
-
+player(2), map(dynamicShadows_debugMode) := 0; # Change to 1 to enable debug mode in training mode.
 
 ignorehitpause if playerno = 1 && NumHelper(6796790) < 1
 {
@@ -50,9 +51,21 @@ ignorehitpause if playerno = 1 && NumHelper(6796790) < 1
 
 ignorehitpause if playerno < 9 && !isHelper && player(1), NumHelper(6796790)
 {
-	let lx = player(1), helper(6796790), pos x;
-	let ly = player(1), helper(6796790), pos y;
-	let lz = player(1), helper(6796790), pos z + cond(StageConst(LightDisableZOffset) = 1, 0, cond(StageConst(LightZOffset) != 0, StageConst(LightZOffset), -30));
+	if StageConst(LightOverride) || (player(2), map(dynamicShadows_debugMode) && gamemode = "training")
+	{
+		let lx = player(1), helper(6796790), pos x;
+		let ly = player(1), helper(6796790), pos y;
+		let lz = player(1), helper(6796790), pos z + cond(StageConst(LightDisableZOffset) > 0, 0, cond(StageConst(LightZOffset) != 0, StageConst(LightZOffset), -30));
+	}
+	else
+	{	
+		let ly_base = -450; #set this to a constant value so the shadows look consistent on all stages
+		let h = abs($ly_base);
+		let dist = 1.5;
+		let lx = (StageVar(shadow.xshear) * $h) * $dist;
+		let ly = $ly_base * $dist;
+		let lz = -(StageVar(shadow.yscale) * $h) * $dist;
+	}
 
 	let px = pos x;
 	let py = pos y;
